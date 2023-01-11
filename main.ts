@@ -65,12 +65,14 @@ namespace FootSmash {
                 }
 
 
-                if (this.isJumpStillPressed && owner.actionButton.isPressed() === false) {
-                    //jump released for first time
-                    this.isJumpStillPressed = false;
+                if (this.isJumpStillPressed) {
+                    if (owner.actionButton.isPressed() === false) {
+                        //jump released for first time
+                        this.isJumpStillPressed = false;
+                    }
                 } else if (owner.actionButton.isPressed() === true) {
                     //pressed the action button again!  now DIVE!         
-                    //return new Dive();
+                    return new Dive();
                 }
 
                 return this;
@@ -79,9 +81,10 @@ namespace FootSmash {
         export class Dive implements IState<Player>{
             public update(elapsedSec: number, owner: Player): IState<Player> {
 
-                //return this;
+                throw "need to implement Dive state";
+                return this;
                 //not implemented, just return back to Idle
-                return new Idle();
+                //return new Idle();
             }
         }
 
@@ -151,13 +154,13 @@ namespace FootSmash {
                     //if actually p2, just switch facing
                     newIsFacingRight = !newIsFacingRight;
                 }
-                if(newIsFacingRight != this.isFacingRight){
+                if (newIsFacingRight != this.isFacingRight) {
                     this.isFacingRight = newIsFacingRight;
                     //flip all sprites
                     this.head.image.flipX();
                     this.body.image.flipX();
                     this.foot.image.flipX();
-                    this.diveBody.image.flipX();                    
+                    this.diveBody.image.flipX();
                 }
             }
         }
