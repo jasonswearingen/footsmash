@@ -1,4 +1,4 @@
-namespace FootSmash { 
+namespace FootSmash {
 
     /** how fast the game runs.  increase to simulate "turbo mode"
      * if your algorithms are done properly, changing this should not impact physics simulation / gameplay logic
@@ -6,6 +6,8 @@ namespace FootSmash {
     let GAME_SPEED = 5.0 //default normal = 5.0
     // y position where the game's "ground" should be
     let GROUND = 120
+    let WALL_LEFT = 5;
+    let WALL_RIGHT = 155;
     // constant acceleration when jumping
     let GRAVITY = -9.8
 
@@ -19,7 +21,7 @@ namespace FootSmash {
         export const P2_Body = SpriteKind.create()
         export const P2_Foot = SpriteKind.create()
     }
-    
+
     /** simple finite state machine */
     namespace PlayerStates {
         export interface IState<TOwner> {
@@ -54,11 +56,11 @@ namespace FootSmash {
                 //move up/down by "gravity"
                 let newHeight = owner.height + (this.yVelocity * elapsedSec);
                 this.yVelocity += GRAVITY * elapsedSec;
-                owner.setHeight(newHeight);
+                owner.standY(newHeight);
 
                 //if at or below zero, back to standing
                 if (newHeight <= 0) {
-                    owner.setHeight(0);
+                    owner.standY(0);
                     return new Idle();
                 }
 
@@ -91,6 +93,9 @@ namespace FootSmash {
         public head: Sprite;
         public body: Sprite;
         public foot: Sprite;
+        public diveBody: Sprite;
+        /** when this changes, sprites will be flipped */
+        public isFacingRight: boolean = true;
 
         public actionButton: controller.Button;
 
@@ -99,25 +104,62 @@ namespace FootSmash {
         constructor(public isP1: boolean, public xPos: number) {
 
             if (isP1) {
-                this.head = sprites.create(assets.image`Head1`, PlayerSpriteKind.P1_Head);
                 this.body = sprites.create(assets.image`Body1`, PlayerSpriteKind.P1_Body);
+                this.diveBody = sprites.create(assets.image`DiveBody1`, PlayerSpriteKind.P1_Body);
+                this.head = sprites.create(assets.image`Head1`, PlayerSpriteKind.P1_Head);
                 this.foot = sprites.create(assets.image`Foot1`, PlayerSpriteKind.P1_Foot);
+
 
                 this.actionButton = controller.B;
             } else {
-                this.head = sprites.create(assets.image`Head2`, PlayerSpriteKind.P2_Head);
                 this.body = sprites.create(assets.image`Body2`, PlayerSpriteKind.P2_Body);
+                this.diveBody = sprites.create(assets.image`DiveBody2`, PlayerSpriteKind.P2_Body);
+                this.head = sprites.create(assets.image`Head2`, PlayerSpriteKind.P2_Head);
                 this.foot = sprites.create(assets.image`Foot2`, PlayerSpriteKind.P2_Foot);
+
                 this.actionButton = controller.A;
             }
+
+            //hide
+            this.diveBody.setPosition(-100, -100);
+
             //set position;
             this.stand(xPos, 0);
 
             this.currentState = new PlayerStates.Idle();
+
+
+
         }
 
         public update(elapsedSec: number) {
             this.currentState = this.currentState.update(elapsedSec, this);
+            this._updateSpriteDirections();
+        }
+
+        private _updateSpriteDirections() {
+            //get facing direction of this player
+            {
+                let newIsFacingRight = false;
+                //first get facing of p1
+                if (myGame.p1.xPos < myGame.p2.xPos) {
+                    newIsFacingRight = true;
+                } else {
+                    newIsFacingRight = false;
+                }
+                if (this.isP1 === false) {
+                    //if actually p2, just switch facing
+                    newIsFacingRight = !newIsFacingRight;
+                }
+                if(newIsFacingRight != this.isFacingRight){
+                    this.isFacingRight = newIsFacingRight;
+                    //flip all sprites
+                    this.head.image.flipX();
+                    this.body.image.flipX();
+                    this.foot.image.flipX();
+                    this.diveBody.image.flipX();                    
+                }
+            }
         }
 
         public stand(xPos: number, height: number): void {
@@ -125,18 +167,20 @@ namespace FootSmash {
             this.height = height;
 
             let y = GROUND - height;
-            this.head.setPosition(xPos, y - 40);
+
+            this.head.setPosition(xPos, y - 35);
             this.body.setPosition(xPos, y - 20);
             this.foot.setPosition(xPos, y - 5);
         }
-        public setHeight(height: number): void {
+        /** set character to standing, only passing in a height */
+        public standY(height: number): void {
             this.stand(this.xPos, height);
         }
     }
 
     export class MyGame {
-        public p1 = new Player(true, 30);
-        public p2 = new Player(false, 130);
+        public p1 = new Player(true, WALL_LEFT);
+        public p2 = new Player(false, WALL_RIGHT);
         private lastUpdateTimestamp: number;
 
         constructor() {
