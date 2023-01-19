@@ -125,7 +125,7 @@ namespace FootSmash {
             private totalElapsed = 0;
             public update(elapsedSec: number, owner: Player): IState<Player> {
                 this.totalElapsed += elapsedSec;
-                console.log(this.totalElapsed);
+                //console.log(this.totalElapsed);
                 //move up/down by gravity
                 {
                     //apply velocity to position.  our game only has y (height) velocity.
@@ -154,7 +154,7 @@ namespace FootSmash {
                     //player wasn't still holding the action button from back in IDLE state.
                     if (owner.actionButton.isPressed() === true) {
                         //pressed the action button again!  now DIVE!         
-                        return new DiveState();
+                        return new DiveState(owner);
                     }
                 }
                 //done with our jump update.  return ourself so that we can do our state again next update.
@@ -163,25 +163,95 @@ namespace FootSmash {
         }
         /** Was "Jumping" to get here.  no time to dive attack! */
         export class DiveState implements IState<Player>{
+
+            public diveDirection: null | "LEFT" | "RIGHT";
+
+            constructor(owner: Player) {
+                //reset collision flags, so that only collisions that occur while we are in dive state matter
+                owner.isFootHitting = false;
+                owner.isFootHittingHead = false;
+                owner.isFootHittingBody = false;
+                owner.isFootHittingFoot = false;
+            }
+
+            public _firstLog = true;
             public update(elapsedSec: number, owner: Player): IState<Player> {
                 //if we just start diving, need to pick a direction to dive.
                 //if we are at either wall, dive towards center of screen.
                 //otherwise, dive toward enemy Player
 
-                //do our dive physics calculation
+                // console.logValue("diveDirection", this.diveDirection);
+                // console.log(this.diveDirection);
+
+                if (this.diveDirection == null) {
+                    if (owner.xPos <= WALL_LEFT) {
+                        this.diveDirection = "RIGHT";
+                    } else if (owner.xPos >= WALL_RIGHT) {
+                        this.diveDirection = "LEFT";
+                    } else if (owner.xPos < owner.enemy.xPos) {
+                        this.diveDirection = "RIGHT";
+                    } else {
+                        this.diveDirection = "LEFT";
+                    }
+                }
+
+
+                //  console.logValue("diveDirection", this.diveDirection);
+                //  console.logValue("owner.xPos <= WALL_LEFT", owner.xPos <= WALL_LEFT);
+                //  console.logValue("owner.xPos >= WALL_RIGHT", owner.xPos >= WALL_RIGHT);
+
+
+                //do our dive physics calculation 
+                {
+                    let dirMult = this.diveDirection === "LEFT" ? -1 : 1;
+                    let newX = owner.xPos + owner.diveVelocityX * elapsedSec * dirMult;
+                    let newHeight = owner.height - owner.diveVelocityY * elapsedSec;
+                    owner.SetPositionDive(newX, newHeight, this.diveDirection);
+                    //BUG:  the above physics (moving character) seems to take place after the frame is done,
+                    //which results in the character moving further than the sprite collision detection triggers,
+                    //when the Dive state finishes.    If we simply move the above physics to the end of 
+                    //our DiveState's update loop, it will effectively cause the dive state to run for one extra frame,
+                    //which lets our sprite collision detection "catch up".  resulting in better collision detection.
+                    //So kids, do that!
+                }
 
                 //if our foot sprite collides with enemy do damage function
-
+                //hitting enemy head is HEADSHOT
+                //hitting enemy body is KO
+                //hitting enemy foot is DOUBLE-KO if enemy is also in dive state, otherwise just KO
+                if (owner.isFootHitting) {
+                    if (owner.isFootHittingHead) {
+                        owner.WinRound("HEADSHOT");
+                    } else if (owner.isFootHittingBody) {
+                        owner.WinRound("KO");
+                    } else if (owner.isFootHittingFoot) {
+                        if (owner.enemy.currentActivityState instanceof DiveState) {
+                            owner.WinRound("DOUBLE_KO");
+                        } else {
+                            owner.WinRound("KO");
+                        }
+                    }
+                    //return shouldn't matter, because match will reset
+                    return new IdleState();
+                }
                 //if our height less than 0, set to 0 and idle.
+                if (owner.height <= 0) {
+                    owner.SetPositionStandY(0);
+                    return new IdleState();
+                }
 
                 //if we hit the wall, transition to jumping (secret ability!) (also easier to code)
+                if (owner.xPos < WALL_LEFT) {
+                    owner.xPos = WALL_LEFT;
+                    return new JumpingState(owner, owner.jumpVelocity);
+                }
+                if (owner.xPos > WALL_RIGHT) {
+                    owner.xPos = WALL_RIGHT;
+                    return new JumpingState(owner, owner.jumpVelocity);
+                }
 
-                THROW_ERROR("need to implement Dive state");
+                //keep doing our dive state collision check and physics next frame
                 return this;
-
-
-
-
             }
         }
 
@@ -191,7 +261,9 @@ namespace FootSmash {
     class Player {
 
         /** when jumping, how fast/far we spring upwards.  38.0 is about full screen vertical distance */
-        public jumpVelocity = 200.0;
+        public jumpVelocity = 250.0;
+        public diveVelocityX = 100.0;
+        public diveVelocityY = 100.0;
 
         /** height above ground.  private so things outside our class can not modify this directly. */
         private _height = 0;
@@ -212,6 +284,14 @@ namespace FootSmash {
         public foot: Sprite;
         public diveBody: Sprite;
 
+        /** a flag, tracks collision detection of our player foot sprite vs opponent.  
+         * if a collision occurs, this is set to TRUE along with the related bodypart (such as [isFootHittingHead])
+         * the [DiveState] is in charge of reading/clearing this flag.
+         */
+        public isFootHitting: boolean = false;
+        public isFootHittingHead: boolean = false;
+        public isFootHittingBody: boolean = false;
+        public isFootHittingFoot: boolean = false;
 
         /** when this changes, sprites will be flipped direction  TODO: move to animation subsystem*/
         public isFacingRight: boolean = true;
@@ -234,6 +314,20 @@ namespace FootSmash {
                 this.head = sprites.create(assets.image`Head1`, PlayerSpriteKind.P1_Head);
                 this.foot = sprites.create(assets.image`Foot1`, PlayerSpriteKind.P1_Foot);
 
+                //if this player's foot sprite overlaps with opponent, store a variable saying that.
+                sprites.onOverlap(PlayerSpriteKind.P1_Foot, PlayerSpriteKind.P2_Head, function (sprite: Sprite, otherSprite: Sprite) {
+                    this.isFootHitting = true;
+                    this.isFootHittingHead = true;
+                })
+                sprites.onOverlap(PlayerSpriteKind.P1_Foot, PlayerSpriteKind.P2_Body, function (sprite: Sprite, otherSprite: Sprite) {
+                    this.isFootHitting = true;
+                    this.isFootHittingBody = true;
+
+                })
+                sprites.onOverlap(PlayerSpriteKind.P1_Foot, PlayerSpriteKind.P2_Foot, function (sprite: Sprite, otherSprite: Sprite) {
+                    this.isFootHitting = true;
+                    this.isFootHittingFoot = true;
+                })
 
                 this.actionButton = controller.B;
             } else {
@@ -241,6 +335,19 @@ namespace FootSmash {
                 this.diveBody = sprites.create(assets.image`DiveBody2`, PlayerSpriteKind.P2_Body);
                 this.head = sprites.create(assets.image`Head2`, PlayerSpriteKind.P2_Head);
                 this.foot = sprites.create(assets.image`Foot2`, PlayerSpriteKind.P2_Foot);
+
+                sprites.onOverlap(PlayerSpriteKind.P2_Foot, PlayerSpriteKind.P1_Head, function (sprite: Sprite, otherSprite: Sprite) {
+                    this.isFootHitting = true;
+                    this.isFootHittingHead = true;
+                })
+                sprites.onOverlap(PlayerSpriteKind.P2_Foot, PlayerSpriteKind.P1_Body, function (sprite: Sprite, otherSprite: Sprite) {
+                    this.isFootHitting = true;
+                    this.isFootHittingBody = true;
+                })
+                sprites.onOverlap(PlayerSpriteKind.P2_Foot, PlayerSpriteKind.P1_Foot, function (sprite: Sprite, otherSprite: Sprite) {
+                    this.isFootHitting = true;
+                    this.isFootHittingFoot = true;
+                })
 
                 this.actionButton = controller.A;
             }
@@ -290,6 +397,15 @@ namespace FootSmash {
             }
         }
 
+        /** helper to easily get the opponent */
+        public get enemy(): Player {
+            if (this.isP1 === true) {
+                return myGame.p2;
+            } else {
+                return myGame.p1;
+            }
+        }
+
         /** change the players position and set to standing (idle) sprites */
         public SetPositionStand(xPos: number, height: number): void {
             this.xPos = xPos;
@@ -306,6 +422,14 @@ namespace FootSmash {
             //just call the other Stand method, passing in the existing xPos
             this.SetPositionStand(this.xPos, height);
         }
+        public SetPositionDive(newX: number, newHeight: number, diveDirection: "LEFT" | "RIGHT") {
+            //THROW_ERROR("need to implement");
+            this.SetPositionStand(newX, newHeight);
+        }
+
+        public WinRound(judgement: "KO" | "HEADSHOT" | "DOUBLE_KO") {
+            THROW_ERROR(`need to implement: ${this.isP1 ? "p1" : "p2"} win! ${judgement}`);
+        }
     }
     /** our simple game engine for FOOTSMASH!   
      * creates two players that can jump and divekick, all being controlled by a single button.
@@ -313,8 +437,8 @@ namespace FootSmash {
       */
     export class EntryPoint {
         /** players are put against the walls */
-        public p1 = new Player(true, WALL_LEFT);
-        public p2 = new Player(false, WALL_RIGHT);
+        public p1 = new Player(true, WALL_LEFT + 22);
+        public p2 = new Player(false, WALL_RIGHT - 22);
 
         /** store the last time the [pumpUpdate()] ran, used for calculating elapsed time between called */
         private lastUpdateTimestamp: number;
