@@ -7,6 +7,7 @@ class EntryPoint {
 
     public p1StartPos = WALL_LEFT + 22;
     public p2StartPos = WALL_RIGHT - 22;
+    
     /** players are put against the walls */
     public p1: Player;// = new Player(true, this.p1StartPos );
     public p2: Player;// = new Player(false, this.p2StartPos);
