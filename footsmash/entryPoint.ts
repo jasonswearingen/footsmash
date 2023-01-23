@@ -3,16 +3,27 @@
  * creates two players that can jump and divekick, all being controlled by a single button.
  * after you create this, you need to call the .pumpUpdate() method in a [forever] block
   */
- class EntryPoint {
+class EntryPoint {
+
+    public p1StartPos = WALL_LEFT + 22;
+    public p2StartPos = WALL_RIGHT - 22;
     /** players are put against the walls */
-    public p1 = new Player(true, WALL_LEFT + 22);
-    public p2 = new Player(false, WALL_RIGHT - 22);
+    public p1: Player;// = new Player(true, this.p1StartPos );
+    public p2: Player;// = new Player(false, this.p2StartPos);
 
     /** store the last time the [pumpUpdate()] ran, used for calculating elapsed time between called */
     private lastUpdateTimestamp: number;
 
     constructor() {
         this.lastUpdateTimestamp = game.runtime();
+        this.p1 = new Player(true, this.p1StartPos);
+        this.p2 = new Player(false, this.p2StartPos);
+        this.newRound();
+    }
+
+    public newRound() {
+        this.p1.SetPositionStand(this.p1StartPos, 0);
+        this.p2.SetPositionStand(this.p2StartPos,0);
     }
 
     /** updates the different "systems" of the game.

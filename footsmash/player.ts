@@ -41,6 +41,8 @@ class Player {
     /** the button that controls this player. */
     public actionButton: controller.Button;
 
+    public info: info.PlayerInfo;
+
     /** the FSM dealing with player activity states
      * The <Player> means that the owner is always a Player object
      */
@@ -51,6 +53,8 @@ class Player {
 
         /** set different sprites/button for each player */
         if (isP1) {
+            this.info = info.player1;
+
             this.body = sprites.create(assets.image`Body1`, PlayerSpriteKind.P1_Body);
             this.diveBody = sprites.create(assets.image`DiveBody1`, PlayerSpriteKind.P1_Body);
             this.head = sprites.create(assets.image`Head1`, PlayerSpriteKind.P1_Head);
@@ -73,6 +77,8 @@ class Player {
 
             this.actionButton = controller.B;
         } else {
+            this.info = info.player2;
+
             this.body = sprites.create(assets.image`Body2`, PlayerSpriteKind.P2_Body);
             this.diveBody = sprites.create(assets.image`DiveBody2`, PlayerSpriteKind.P2_Body);
             this.head = sprites.create(assets.image`Head2`, PlayerSpriteKind.P2_Head);
@@ -170,6 +176,29 @@ class Player {
     }
 
     public WinRound(judgement: "KO" | "HEADSHOT" | "DOUBLE_KO") {
-        THROW_ERROR(`need to implement: ${this.isP1 ? "p1" : "p2"} win! ${judgement}`);
+
+        switch (judgement) {
+            case "KO":
+                this.info.changeScoreBy(1);
+                break;
+            case "HEADSHOT":
+                this.info.changeScoreBy(2);
+                break;
+            case "DOUBLE_KO":
+                this.info.changeScoreBy(1);
+                this.enemy.info.changeScoreBy(1);
+                break;
+            default:
+                THROW_ERROR("invalid switch " + judgement);
+        }
+        myGame.newRound();
+
+        //THROW_ERROR(`need to implement: ${this.isP1 ? "p1" : "p2"} win! ${judgement}`);
+
+
+
+
+
+
     }
 }
