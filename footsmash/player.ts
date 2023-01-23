@@ -191,7 +191,10 @@ class Player {
             default:
                 THROW_ERROR("invalid switch " + judgement);
         }
-        myGame.newRound();
+        game.showDialog(judgement,"winnah!")
+        //game.showLongText("woo",DialogLayout.Center);
+        
+        myGame.newRound(judgement);
 
         //THROW_ERROR(`need to implement: ${this.isP1 ? "p1" : "p2"} win! ${judgement}`);
 

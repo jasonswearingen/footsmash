@@ -20,9 +20,36 @@ class EntryPoint {
         this.p1 = new Player(true, this.p1StartPos);
         this.p2 = new Player(false, this.p2StartPos);
         this.newRound();
-    }
 
-    public newRound() {
+        this. koSprite = sprites.create(assets.image`ko`);
+        this.headshotSprite = sprites.create(assets.image`headshot`);
+        this.doubleKoSprite = sprites.create(assets.image`doubleko`);
+        this.koSprite.setPosition(-100, -100);
+        this.headshotSprite.setPosition(-100, -100);
+        this.doubleKoSprite.setPosition(-100, -100);
+    }
+//sprites.create(assets.image`Body1`, PlayerSpriteKind.P1_Body);
+    private koSprite:Sprite;
+    private headshotSprite: Sprite
+    private doubleKoSprite: Sprite
+
+    public newRound(judgement?:undefined| "KO" | "HEADSHOT" | "DOUBLE_KO") {
+        switch (judgement) {
+            case "KO":
+                this.koSprite.setPosition(80,30);
+                setTimeout(() => this.koSprite.setPosition(-100,-100),1000);
+                break;
+            case "HEADSHOT":
+                this.headshotSprite.setPosition(80, 30);
+                setTimeout(() => this.headshotSprite.setPosition(-100, -100), 1000);
+                break;
+            case "DOUBLE_KO":
+                this.doubleKoSprite.setPosition(80, 30);
+                setTimeout(() => this.doubleKoSprite.setPosition(-100, -100), 1000);
+                break;
+            default:
+                //THROW_ERROR("invalid switch " + judgement);
+        }
         this.p1.SetPositionStand(this.p1StartPos, 0);
         this.p2.SetPositionStand(this.p2StartPos,0);
     }
