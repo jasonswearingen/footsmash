@@ -25,3 +25,27 @@ To edit this repository in MakeCode.
 
 * for PXT/arcade
 <script src="https://makecode.com/gh-pages-embed.js"></script><script>makeCodeRender("{{ site.makecode.home_url }}", "{{ site.github.owner_name }}/{{ site.github.repository_name }}");</script>
+
+
+# running in VSCode
+
+- from: https://forum.makecode.com/t/how-to-attach-makecode-typescript-to-virtual-studio/16670/2
+
+here are the steps you can use:
+
+- Install https://nodejs.org/en/
+- Open the terminal of your choice
+- Install the makecode CLI:
+- npm install makecode -g
+- Navigate to the folder where you want to create your project:
+- cd path/to/directory/
+- Create your project:
+- makecode init arcade
+- Install your dependencies:
+- makecode install
+- Open VSCode:
+- code .
+- Start the makecode simulator:
+- makecode serve
+- In a browser, open up the url that is printed in the console (http://127.0.0.1:7001 2)
+- Now you can code your project in vscode and every time you save a file, the game in the browser will automatically refresh.

@@ -12,7 +12,12 @@
         "images.g.jres",
         "images.g.ts",
         "tilemap.g.jres",
-        "tilemap.g.ts"
+        "tilemap.g.ts",
+        "footsmash/playerActivityFsm.ts",
+        "footsmash/globals.ts",
+        "footsmash/player.ts",
+        "footsmash/playerSpriteKind.ts",
+        "footsmash/entryPoint.ts"
     ],
     "testFiles": [
         "test.ts"
