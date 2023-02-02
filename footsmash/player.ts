@@ -74,6 +74,7 @@ class Player {
                 this.isFootHitting = true;
                 this.isFootHittingFoot = true;
             })
+            
 
             this.actionButton = controller.B;
         } else {

@@ -182,14 +182,16 @@ namespace PlayerActivityFsm {
             if (owner.isFootHitting) {
                 if (owner.isFootHittingHead) {
                     owner.WinRound("HEADSHOT");
-                } else if (owner.isFootHittingBody) {
-                    owner.WinRound("KO");
-                } else if (owner.isFootHittingFoot) {
+                }else if (owner.isFootHittingFoot) {
                     if (owner.enemy.currentActivityState instanceof DiveState) {
+                        //reset enemy to idle too, otherwise it will immediately get a KO
+                        owner.enemy.currentActivityState = new IdleState();
                         owner.WinRound("DOUBLE_KO");
                     } else {
                         owner.WinRound("KO");
                     }
+                } else if (owner.isFootHittingBody) {
+                    owner.WinRound("KO");
                 }
                 //return shouldn't matter, because match will reset
                 return new IdleState();
