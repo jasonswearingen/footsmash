@@ -1,4 +1,7 @@
- 
+## Play it now:
+
+ [![image](https://github.com/jasonswearingen/footsmash/assets/814134/ef922c54-651c-4b84-917a-69effd2bc656)](https://jasonswearingen.github.io/footsmash/)
+
 
 
 > Open this page at [https://jasonswearingen.github.io/footsmash/](https://jasonswearingen.github.io/footsmash/)
